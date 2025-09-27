@@ -16,6 +16,10 @@ const featureColumns = [
   "planet_density", "star_density", "flux_received"
 ];
 
+app.get("/", (req, res) => {
+  res.send("Exoplanet Habitability Prediction API");
+});
+
 // Predict endpoint
 app.post("/predict", (req, res) => {
   try {
