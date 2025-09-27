@@ -17,7 +17,7 @@ const featureColumns = [
 ];
 
 app.get("/", (req, res) => {
-  res.send("Exoplanet Habitability Prediction API");
+  res.status(200).json({ message: "running" });
 });
 
 // Predict endpoint
