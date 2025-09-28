@@ -2,11 +2,13 @@
 import express from "express";
 import bodyParser from "body-parser";
 import { spawn } from "child_process";
+import cors from "cors";
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
 // Middleware
+app.use(cors()); 
 app.use(bodyParser.json());
 
 // Feature columns (same as training order)
@@ -70,5 +72,5 @@ app.post("/predict", (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
