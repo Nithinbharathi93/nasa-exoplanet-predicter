@@ -31,6 +31,11 @@ export default function ExoplanetForm() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
 
+  const [codeValue, setCodeValue] = useState("0.01 - INTRODUCTION");
+  const [protocolValue, setProtocolValue] = useState("023.041.200");
+  const [statusValue, setStatusValue] = useState("AWAITING INPUT");
+
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -40,12 +45,11 @@ const handleSubmit = async (e) => {
   setLoading(true);
   setResult(null);
   setError(null);
-
-  // Optional: simulate network delay for loading effect
-  await new Promise((resolve) => setTimeout(resolve, 2000));
+  setStatusValue("PROCESSING"); // STATUS updates during request
+  setCodeValue("0.02 - DATA UPLOAD");
+  setProtocolValue("023.041.201");
 
   try {
-    // Convert form values to numbers
     const numericData = {};
     Object.keys(formData).forEach((key) => {
       const value = parseFloat(formData[key]);
@@ -64,19 +68,31 @@ const handleSubmit = async (e) => {
     }
 
     const data = await response.json();
-
-    // ✅ Extract only the prediction string safely
     if (data && typeof data.prediction === "string") {
       setResult(data);
+
+      // ✅ Update STATUS dynamically
+      if (data.prediction === "FALSE POSITIVE") {
+        setStatusValue("FALSE POSITIVE ALERT");
+      } else if (data.prediction === "CANDIDATE") {
+        setStatusValue("CANDIDATE REVIEW");
+      } else {
+        setStatusValue("PREDICTION RECEIVED");
+        setCodeValue("0.03 - PREDICTION");
+        setProtocolValue("023.041.202");
+      }
+
     } else {
       throw new Error("INVALID RESPONSE FORMAT FROM SERVER");
     }
   } catch (err) {
     setError(err.message);
+    setStatusValue("ERROR");
   } finally {
     setLoading(false);
   }
 };
+
 
 
   const fields = [
@@ -238,7 +254,15 @@ const handleSubmit = async (e) => {
 
   return (
     <div className="min-h-screen bg-transparent text-emerald-400 font-mono flex items-center justify-center p-4">
-      <div className="relative border-2 border-emerald-500/30 w-full max-w-6xl h-auto p-4 md:p-8 backdrop-blur-sm bg-black/30">
+          <div className="sky-container">
+        <div className="stars stars-1"></div>
+        <div className="stars stars-2"></div>
+        <div className="stars stars-1"></div>
+        <div className="stars stars-3"></div>
+        <div className="stars stars-1"></div>
+        <div className="stars stars-3"></div>
+    </div>
+      <div className="relative border-2 border-emerald-500/30 w-full max-w-6xl h-auto p-4 md:p-8 bg-black/30">
         {/* Decorative Corners */}
         <Corner position="top-left" />
         <Corner position="top-right" />
@@ -246,21 +270,31 @@ const handleSubmit = async (e) => {
         <Corner position="bottom-right" />
 
         {/* Header */}
-        <div className="flex justify-between items-center border-b-2 border-emerald-500/30 pb-2 mb-4 text-xs tracking-widest">
-          <span>[CODE: 0.01 - INTRODUCTION]</span>
-          <span>PROTOCOL: 023.041.200</span>
-        </div>
-
-        {/* Main Content */}
-        <div className="min-h-[60vh] flex items-center justify-center p-4">
+          <div className="flex justify-between items-center border-b-2 border-emerald-500/30 pb-2 mb-4 text-xs tracking-widest">
+            <span>{`[CODE: ${codeValue}]`}</span>
+            <span>{`PROTOCOL: ${protocolValue}`}</span>
+          </div>
+          {/* Main Content */}
+          <div className="min-h-[60vh] flex items-center justify-center p-4">
             {renderContent()}
-        </div>
+          </div>
 
-        {/* Footer */}
-        <div className="border-t-2 border-emerald-500/30 pt-2 mt-4 text-xs tracking-widest flex justify-between">
-           <span>STATUS: AWAITING INPUT</span>
-           <RandomCoords />
-        </div>
+          {/* Footer */}
+          <div className="border-t-2 border-emerald-500/30 pt-2 mt-4 text-xs tracking-widest flex justify-between">
+            <span
+              className={`${
+                statusValue.includes("FALSE POSITIVE")
+                  ? "text-red-400 animate-pulse-glow"
+                  : statusValue.includes("ERROR")
+                  ? "text-red-400"
+                  : "text-emerald-400"
+              }`}
+            >
+              {`STATUS: ${statusValue}`}
+            </span>
+            <RandomCoords />
+          </div>
+
       </div>
     </div>
   );
