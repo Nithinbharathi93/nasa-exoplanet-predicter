@@ -2,6 +2,11 @@
 
 A full-stack application that predicts the likelihood of exoplanet candidates being confirmed exoplanets using machine learning. The application uses a trained model to analyze various astronomical parameters and classify potential exoplanets.
 
+## Live Demo
+
+- Frontend: [https://nasa-exoplanet-predicter.vercel.app/](https://nasa-exoplanet-predicter.vercel.app/)
+- Backend API: [https://nasa-exoplanet-predictor.onrender.com/](https://nasa-exoplanet-predictor.onrender.com/)
+
 ## Project Structure
 
 ```
@@ -105,9 +110,41 @@ The application will be available at `http://localhost:5173` (or your configured
 
 ### POST /predict
 Accepts astronomical data and returns exoplanet predictions:
-- Input: JSON object with astronomical parameters
-- Output: Prediction classification and confidence scores
-- Error Handling: Validates input and provides detailed error messages
+- Endpoint: `https://nasa-exoplanet-predictor.onrender.com/predict`
+- Method: `POST`
+- Content-Type: `application/json`
+
+#### Sample Request Body
+```json
+{
+    "orb_period": 1.9,
+    "planet_radius": 65.0,
+    "planet_mass": 250000.0,
+    "pl_eqt": 2800,
+    "st_teff": 7500,
+    "st_rad": 1.5,
+    "st_mass": 1.4,
+    "sy_dist": 600,
+    "transit_depth": 210000.0,
+    "transit_duration": 4.8
+}
+```
+
+#### Parameters Description
+- `orb_period`: Orbital period in days
+- `planet_radius`: Planet radius in Earth radii
+- `planet_mass`: Planet mass in Earth masses
+- `pl_eqt`: Planet equilibrium temperature in Kelvin
+- `st_teff`: Star effective temperature in Kelvin
+- `st_rad`: Star radius in Solar radii
+- `st_mass`: Star mass in Solar masses
+- `sy_dist`: System distance in parsecs
+- `transit_depth`: Transit depth in parts per million (ppm)
+- `transit_duration`: Transit duration in hours
+
+#### Response Format
+- Success: Returns prediction classification (CONFIRMED, CANDIDATE, or FALSE POSITIVE)
+- Error: Returns error message with details if request is invalid
 
 ## Contributing
 
