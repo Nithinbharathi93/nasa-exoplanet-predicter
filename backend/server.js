@@ -1,76 +1,70 @@
-// server.js
-import express from "express";
-import bodyParser from "body-parser";
-import { spawn } from "child_process";
-import cors from "cors";
+import express from 'express';
+import { spawn } from 'child_process';
+import cors from 'cors';
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors()); 
-app.use(bodyParser.json());
+app.use(cors()); // Enable Cross-Origin Resource Sharing
+app.use(express.json()); // To parse JSON request bodies
 
-// Feature columns (same as training order)
-const featureColumns = [
-  "orb_period", "planet_radius", "planet_mass", "pl_eqt", "st_teff",
-  "st_rad", "st_mass", "sy_dist", "transit_depth", "transit_duration",
-  "planet_density", "star_density", "flux_received"
-];
-
-app.get("/", (req, res) => {
-  res.status(200).json({ message: "running" });
-});
-
-// Predict endpoint
-app.post("/predict", (req, res) => {
-  try {
+// --- API Endpoint for Predictions ---
+app.post('/predict', (req, res) => {
+    // 1. Get the data from the request body
     const inputData = req.body;
 
-    // Perform same feature engineering as Python
-    const planet_density = inputData.planet_mass / Math.pow(inputData.planet_radius || 1, 3) + 1e-6;
-    const star_density = inputData.st_mass / Math.pow(inputData.st_rad || 1, 3) + 1e-6;
-    const flux_received = inputData.st_teff * Math.pow(
-      (inputData.st_rad / Math.sqrt(inputData.sy_dist + 1e-6)), 2
-    );
+    // Check if body is empty
+    if (!inputData || Object.keys(inputData).length === 0) {
+        return res.status(400).json({ error: 'Request body cannot be empty.' });
+    }
 
-    // Construct data row in correct order
-    const dataRow = {
-      ...inputData,
-      planet_density,
-      star_density,
-      flux_received
-    };
+    // 2. Convert the JSON data to a string to pass to the Python script
+    const dataString = JSON.stringify(inputData);
 
-    const orderedRow = featureColumns.map(col => dataRow[col]);
+    // 3. Spawn a child process to run the Python script
+    // Use 'python3' or 'python' depending on your system setup
+    const pythonProcess = spawn('python', ['connector.py', dataString]);
 
-    // Call Python script for prediction
-    const py = spawn("python", ["predict.py", JSON.stringify(orderedRow)]);
+    let predictionResult = '';
+    let errorData = '';
 
-    let result = "";
-    py.stdout.on("data", (data) => {
-      result += data.toString();
+    // 4. Listen for data coming from the Python script's standard output
+    pythonProcess.stdout.on('data', (data) => {
+        predictionResult += data.toString();
     });
 
-    py.stderr.on("data", (err) => {
-      console.error("Python Error:", err.toString());
+    // Listen for any errors from the Python script
+    pythonProcess.stderr.on('data', (data) => {
+        errorData += data.toString();
     });
 
-    py.on("close", () => {
-      try {
-        const prediction = JSON.parse(result);
-        res.json({ prediction });
-      } catch (e) {
-        res.status(500).json({ error: "Prediction parsing failed", details: e.message });
-      }
+    // 5. When the Python script finishes, send the result back
+    pythonProcess.on('close', (code) => {
+        if (code !== 0 || errorData) {
+            console.error(`Python script exited with code ${code}`);
+            console.error('Error details:', errorData);
+            return res.status(500).json({ 
+                error: 'Failed to get prediction from the model.',
+                details: errorData 
+            });
+        }
+        
+        try {
+            // Parse the JSON string from Python and send it as the response
+            const finalResult = JSON.parse(predictionResult);
+            res.status(200).json(finalResult);
+        } catch (parseError) {
+            console.error('Error parsing JSON from Python script:', parseError);
+            res.status(500).json({ 
+                error: 'Could not parse the prediction result.',
+                raw_output: predictionResult 
+            });
+        }
     });
-
-  } catch (err) {
-    res.status(500).json({ error: "Prediction failed", details: err.message });
-  }
 });
 
-// Start server
+// Start the server
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(`🚀 Server is running on http://localhost:${PORT}`);
 });
